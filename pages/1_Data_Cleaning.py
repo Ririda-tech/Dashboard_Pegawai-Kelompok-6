@@ -3,6 +3,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 st.set_page_config(page_title="Data Cleaning Pegawai Kampus XYZ", page_icon="🧹", layout="wide")
 st.title("🧹 Data Cleaning - Data Pegawai Kampus XYZ")
+st.subheader("📥 Download Dataset")
+
+with open("Data Pegawai Kampus XYZ.csv", "rb") as file:
+    st.download_button(
+        label="📥 Download Data Mentah",
+        data=file,
+        file_name="Data Pegawai Kampus XYZ.csv",
+        mime="text/csv"
+    )
 st.caption("UAS Visualisasi Data | Kelompok 6 | Visualisasi dashboard dilanjutkan di Tableau")
 st.sidebar.header("Upload Data")
 uploaded = st.sidebar.file_uploader("Upload file CSV hasil export Tableau", type=["csv"])
