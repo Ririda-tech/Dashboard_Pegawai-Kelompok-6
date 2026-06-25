@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import os
 import matplotlib.pyplot as plt
+
 st.set_page_config(page_title="Data Cleaning Pegawai Kampus XYZ", page_icon="🧹", layout="wide")
 st.title("🧹 Data Cleaning - Data Pegawai Kampus XYZ")
 st.markdown("""
@@ -83,64 +87,94 @@ st.dataframe(
     use_container_width=True
 )
 st.divider()
-st.subheader("4. Outlier Detection")
+
+st.subheader("4️⃣ Outlier Detection")
 if 'usia' in df.columns:
-    outlier = df[(df['usia'] < 18) | (df['usia'] > 80)]
-    st.write(f"Usia tidak wajar (<18 atau >80 tahun): {len(outlier)} data")
+    outlier_count = len(df[(df['usia'] < 18) | (df['usia'] > 80)])
+    st.write(f"Usia tidak wajar (< 18 atau > 80 tahun): **{outlier_count} data**")
+
+    uv = df[(df['usia'] >= 18) & (df['usia'] <= 80)]['usia'].dropna()
+
     col_c, col_d = st.columns(2)
     with col_c:
-        fig2, ax2 = plt.subplots(figsize=(5, 3.5))
-        ax2.hist(df['usia'].dropna(), bins=20, color='steelblue', edgecolor='black')
-        ax2.set_title('Histogram Distribusi Usia', fontweight='bold')
-        ax2.set_xlabel('Usia (tahun)')
-        ax2.set_ylabel('Jumlah Pegawai')
-        plt.tight_layout()
-        st.pyplot(fig2)
+        fig_hist = px.histogram(
+            uv, nbins=20,
+            title='Histogram Distribusi Usia',
+            labels={'value': 'Usia (tahun)', 'count': 'Jumlah'},
+            color_discrete_sequence=['#2e6db4']
+        )
+        fig_hist.add_vline(x=uv.mean(), line_dash='dash', line_color='red',
+                           annotation_text=f'Rata-rata: {uv.mean():.1f} th', annotation_position='top right')
+        fig_hist.update_layout(height=350, showlegend=False)
+        st.plotly_chart(fig_hist, use_container_width=True)
+
     with col_d:
-        fig3, ax3 = plt.subplots(figsize=(5, 3.5))
-        ax3.boxplot(df['usia'].dropna(), vert=True, patch_artist=True,
-                   boxprops=dict(facecolor='lightblue'))
-        ax3.set_title('Box Plot Usia', fontweight='bold')
-        ax3.set_ylabel('Usia (tahun)')
-        plt.tight_layout()
-        st.pyplot(fig3)
-    st.write(df['usia'].describe().rename('Statistik Usia').to_frame())
+        fig_box = px.box(
+            df[(df['usia'] >= 18) & (df['usia'] <= 80)],
+            y='usia',
+            title='Box Plot Distribusi Usia',
+            labels={'usia': 'Usia (tahun)'},
+            color_discrete_sequence=['#2e6db4']
+        )
+        fig_box.update_layout(height=350)
+        st.plotly_chart(fig_box, use_container_width=True)
+
+    st.dataframe(uv.describe().rename('Statistik Usia').to_frame().T, use_container_width=True)
+
 st.divider()
-st.subheader("5. Data Consistency Check")
+
+# ── 5. Data Consistency Check ─────────────────────────────────────────────────
+st.subheader("5️⃣ Data Consistency Check")
+
+ok_count = 0
+warn_count = 0
+
 if 'sertifikasi' in df.columns and 'tahun_sertifikasi' in df.columns:
     ink1 = df[
         (df['sertifikasi'].notna() & df['tahun_sertifikasi'].isna()) |
         (df['sertifikasi'].isna() & df['tahun_sertifikasi'].notna())
     ]
     if len(ink1) == 0:
-        st.success("Kolom sertifikasi & tahun_sertifikasi konsisten")
+        st.success("✅ Kolom `sertifikasi` & `tahun_sertifikasi` konsisten.")
+        ok_count += 1
     else:
-        st.warning(f"{len(ink1)} data inkonsisten antara sertifikasi dan tahun_sertifikasi")
-        st.dataframe(ink1[['id_pegawai','sertifikasi','tahun_sertifikasi']].head(10))
+        st.warning(f"⚠️ {len(ink1)} data inkonsisten antara `sertifikasi` dan `tahun_sertifikasi`.")
+        st.dataframe(ink1[['id_pegawai', 'sertifikasi', 'tahun_sertifikasi']].head(10))
+        warn_count += 1
+
 if 'jabatan_akademik' in df.columns and 'tgl_jabatan_akademik' in df.columns:
     ink2 = df[
         (df['jabatan_akademik'].notna() & df['tgl_jabatan_akademik'].isna()) |
         (df['jabatan_akademik'].isna() & df['tgl_jabatan_akademik'].notna())
     ]
     if len(ink2) == 0:
-        st.success("Kolom jabatan_akademik & tgl_jabatan_akademik konsisten")
+        st.success("✅ Kolom `jabatan_akademik` & `tgl_jabatan_akademik` konsisten.")
+        ok_count += 1
     else:
-        st.warning(f"{len(ink2)} data inkonsisten antara jabatan_akademik dan tanggal")
-        st.dataframe(ink2[['id_pegawai','jabatan_akademik','tgl_jabatan_akademik']].head(10))
-st.write("Nilai unik per kolom kategorikal:")
-cat_cols = ['jk','stat_aktif','stat_pegawai','ikatan_kerja','pendidikan','jabatan_akademik','sertifikasi','jenj_prodi','rumpun_ilmu']
+        st.warning(f"⚠️ {len(ink2)} data inkonsisten antara `jabatan_akademik` dan tanggalnya.")
+        st.dataframe(ink2[['id_pegawai', 'jabatan_akademik', 'tgl_jabatan_akademik']].head(10))
+        warn_count += 1
+
+st.markdown("**Nilai unik per kolom kategorikal:**")
+cat_cols = ['jk', 'stat_aktif', 'stat_pegawai', 'ikatan_kerja', 'pendidikan',
+            'jabatan_akademik', 'sertifikasi', 'jenj_prodi', 'rumpun_ilmu', 'fakultas']
+rows = []
 for col in cat_cols:
     if col in df.columns:
         uniq = sorted(df[col].dropna().unique().tolist())
-        st.write(f"- {col}: {uniq}")
+        rows.append({'Kolom': col, 'Jumlah Unique': len(uniq), 'Nilai': ', '.join(str(u) for u in uniq)})
+st.dataframe(pd.DataFrame(rows), use_container_width=True)
+
 st.divider()
-st.subheader("Download Hasil Cleaning")
-csv = df.to_csv(index=False).encode('utf-8')
+
+# ── Download ──────────────────────────────────────────────────────────────────
+st.subheader("⬇️ Download Hasil Cleaning")
+csv_out = df.to_csv(index=False).encode('utf-8')
 st.download_button(
-    label="Download data_pegawai_clean.csv",
-    data=csv,
+    label="📥 Download data_pegawai_clean.csv",
+    data=csv_out,
     file_name='data_pegawai_clean.csv',
     mime='text/csv',
     use_container_width=True
 )
-st.info("File CSV bersih ini langsung bisa di-import ke Tableau untuk membuat dashboard visualisasi.")
+st.info("Gunakan file ini untuk diunggah ke halaman **Dashboard Pegawai**.")
