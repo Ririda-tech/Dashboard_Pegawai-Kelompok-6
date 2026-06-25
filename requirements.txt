@@ -1,5 +1,9 @@
-streamlit
+streamlit>=1.32.0
 matplotlib
 pandas
 scipy
 numpy
+plotly>=5.18.0
+folium>=0.15.0
+streamlit-folium>=0.18.0
+statsmodels
