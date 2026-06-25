@@ -3,8 +3,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 st.set_page_config(page_title="Data Cleaning Pegawai Kampus XYZ", page_icon="🧹", layout="wide")
 st.title("🧹 Data Cleaning - Data Pegawai Kampus XYZ")
-st.subheader("📥 Download Dataset")
+st.markdown("""
+### 📥 Belum punya dataset?
 
+Silakan download data mentah terlebih dahulu menggunakan tombol berikut:
+""")
 with open("Data Pegawai Kampus XYZ.csv", "rb") as file:
     st.download_button(
         label="📥 Download Data Mentah",
@@ -12,9 +15,9 @@ with open("Data Pegawai Kampus XYZ.csv", "rb") as file:
         file_name="Data Pegawai Kampus XYZ.csv",
         mime="text/csv"
     )
-st.caption("UAS Visualisasi Data | Kelompok 6 | Visualisasi dashboard dilanjutkan di Tableau")
+st.caption("UAS Visualisasi Data | Kelompok 6 | Visualisasi dashboard ")
 st.sidebar.header("Upload Data")
-uploaded = st.sidebar.file_uploader("Upload file CSV hasil export Tableau", type=["csv"])
+uploaded = st.sidebar.file_uploader("Upload file CSV", type=["csv"])
 if uploaded is None:
     st.info("Upload file data_pegawai.csv di sidebar kiri untuk memulai.")
     st.stop()
@@ -134,7 +137,7 @@ st.divider()
 st.subheader("Download Hasil Cleaning")
 csv = df.to_csv(index=False).encode('utf-8')
 st.download_button(
-    label="Download data_pegawai_clean.csv -> Import ke Tableau",
+    label="Download data_pegawai_clean.csv",
     data=csv,
     file_name='data_pegawai_clean.csv',
     mime='text/csv',
